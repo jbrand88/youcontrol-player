@@ -1,0 +1,48 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>YouControl Player</title>
+<style>
+  html, body { margin:0; padding:0; width:100%; height:100%; background:#000; overflow:hidden; }
+  #p { width:100%; height:100%; }
+</style>
+<div id="p"></div>
+<script src="https://www.youtube.com/iframe_api"></script>
+<script>
+  // Página "ponte": roda num endereço https real (GitHub Pages) para que o
+  // YouTube aceite o embed (erro 153 acontece quando a página que incorpora
+  // não tem uma origem http(s) válida — é exatamente o caso de um app
+  // rodando de dentro da TV). O app YouControl carrega essa página dentro
+  // de um iframe, passando o vídeo pela URL (?v=ID), e essa página avisa o
+  // YouControl sobre o que está acontecendo (tocando, pausado, terminou)
+  // via postMessage.
+
+  function getParam(name) {
+    var m = new RegExp("[?&]" + name + "=([^&]+)").exec(location.search);
+    return m ? decodeURIComponent(m[1]) : null;
+  }
+
+  var videoId = getParam("v");
+  var player = null;
+
+  function notifyParent(type, extra) {
+    var msg = Object.assign({ source: "youcontrol-player", type: type }, extra || {});
+    if (window.parent) window.parent.postMessage(msg, "*");
+  }
+
+  window.onYouTubeIframeAPIReady = function () {
+    if (!videoId) { notifyParent("error", { message: "sem_video_id" }); return; }
+    player = new YT.Player("p", {
+      width: "100%",
+      height: "100%",
+      videoId: videoId,
+      playerVars: {
+        autoplay: 1, controls: 1, rel: 0, fs: 0, playsinline: 1, modestbranding: 1
+      },
+      events: {
+        onReady: function () { notifyParent("ready"); },
+        onStateChange: function (e) { notifyParent("state", { state: e.data }); },
+        onError: function (e) { notifyParent("error", { code: e.data }); }
+      }
+    });
+  };
+</script>
