@@ -45,4 +45,18 @@
       }
     });
   };
+
+  // Recebe comandos do app pai (YouControl), por exemplo o botão
+  // "Continuar assistindo" do painel de pausa, que não tem como chamar o
+  // player diretamente porque essa página roda numa origem diferente
+  // (GitHub Pages) dentro de um iframe.
+  window.addEventListener("message", function (event) {
+    var data = event.data;
+    if (!data || data.source !== "youcontrol-app" || !player) return;
+    if (data.command === "play" && typeof player.playVideo === "function") {
+      player.playVideo();
+    } else if (data.command === "pause" && typeof player.pauseVideo === "function") {
+      player.pauseVideo();
+    }
+  });
 </script>
