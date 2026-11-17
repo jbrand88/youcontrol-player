@@ -36,7 +36,8 @@
       height: "100%",
       videoId: videoId,
       playerVars: {
-        autoplay: 1, controls: 1, rel: 0, fs: 0, playsinline: 1, modestbranding: 1
+        autoplay: 1, controls: 0, rel: 0, fs: 0, playsinline: 1, modestbranding: 1,
+        disablekb: 1, iv_load_policy: 3
       },
       events: {
         onReady: function () { notifyParent("ready"); },
@@ -57,6 +58,20 @@
       player.playVideo();
     } else if (data.command === "pause" && typeof player.pauseVideo === "function") {
       player.pauseVideo();
+    } else if (data.command === "seek" && typeof player.seekTo === "function") {
+      // Beta 2.8 — o app manda "seek" com `seconds` (positivo avança, negativo
+      // volta). Se o vídeo estava pausado, continua pausado (mostra o quadro novo).
+      var secs = Number(data.seconds) || 0;
+      var t = typeof player.getCurrentTime === "function" ? player.getCurrentTime() : 0;
+      var dur = typeof player.getDuration === "function" ? player.getDuration() : 0;
+      var alvo = Math.max(0, t + secs);
+      if (dur && alvo > dur - 1) alvo = Math.max(0, dur - 1);
+      var estavaPausado = typeof player.getPlayerState === "function" && player.getPlayerState() === 2;
+      player.seekTo(alvo, true);
+      if (estavaPausado) {
+        player.pauseVideo();
+        setTimeout(function () { player.pauseVideo(); }, 350);
+      }
     }
   });
 </script>
